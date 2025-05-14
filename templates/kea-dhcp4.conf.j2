@@ -1,0 +1,44 @@
+{
+  "Dhcp4": {
+    "interfaces-config": {
+      "interfaces": [ "{{ networkifacename }}" ]
+    },
+    "subnet4": [
+      {
+        "subnet": "{{ dhcp.ipid }}/{{ dhcp.netmaskid }}",
+        "pools": [ { "pool": "{{ dhcp.poolstart }} - {{ dhcp.poolend }}" } ],
+        "option-data": [
+          { "name": "routers", "data": "{{ dhcp.router }}" },
+          { "name": "broadcast-address", "data": "{{ dhcp.bcast }}" },
+          { "name": "domain-name-servers", "data": "{{ dhcp.dns | default(helper.ipaddr) }}" },
+          { "name": "domain-name", "data": "{{ dns.clusterid }}.{{ dns.domain | lower }}" }
+        ],
+        "reservations": [
+          {% for m in masters %}
+          { "hw-address": "{{ m.macaddr | lower }}", "ip-address": "{{ m.ipaddr }}" },
+          {% endfor %}
+          {% for w in workers %}
+          { "hw-address": "{{ w.macaddr | lower }}", "ip-address": "{{ w.ipaddr }}" },
+          {% endfor %}
+          {% if bootstrap is defined %}
+          { "hw-address": "{{ bootstrap.macaddr | lower }}", "ip-address": "{{ bootstrap.ipaddr }}" }
+          {% endif %}
+        ],
+        "next-server": "{{ helper.ipaddr }}",
+        "boot-file-name": {% if ppc64le %}"boot/grub2/powerpc-ieee1275/core.elf"{% else %}"pxelinux.0"{% endif %}
+      }
+    ],
+    "lease-database": {
+      "type": "memfile",
+      "persist": true,
+      "name": "/var/lib/kea/dhcp4.leases"
+    },
+    "loggers": [
+      {
+        "name": "kea-dhcp4",
+        "output_options": [ { "output": "stdout" } ],
+        "severity": "INFO"
+      }
+    ]
+  }
+}

@@ -17,7 +17,7 @@
 
 - block:
   - set_fact:
-      critical_services: "{{ critical_services + [ 'dhcpd' ] }}"
+      critical_services: "{{ critical_services + [ 'kea-dhcp4' ] }}"
   when: not staticips
 
 - block:
@@ -129,4 +129,48 @@
         - httpd
         - rpcbind
         - nfs-server
-  when: ansible_distribution_major_version | int >= 8
+  when: ansible_distribution_major_version >= "8"
+- block:
+  - set_fact:
+      packages:
+        - bind
+        - bind-utils
+        - firewalld
+        - haproxy
+        - httpd
+        - vim
+        - bash-completion
+        - python3-libselinux
+        - podman
+        - nfs-utils
+        - grub2-tools
+        - grub2-tools-extra
+  
+  - set_fact:
+      dhcppkgs:
+        - kea
+        - tftp-server
+
+  - set_fact:
+      syslinuxpkgs:
+        - syslinux
+
+  - set_fact:
+      uefipkgs:
+        - shim-x64
+        - grub2-efi-x64
+
+  # See Fedora Wiki for changes:
+  # https://fedoraproject.org/wiki/Changes/RenameNobodyUser
+  - set_fact:
+      owner: nobody
+      group: nobody
+  
+  - set_fact:
+      services:
+        - named
+        - haproxy
+        - httpd
+        - rpcbind
+        - nfs-server
+  when: ansible_distribution_major_version == "10"

@@ -49,16 +49,16 @@
 
   - name: Write out dhcp file
     template:
-      src: ../templates/dhcpd.conf.j2
-      dest: /etc/dhcp/dhcpd.conf
+      src: ../templates/kea-dhcp4.conf.j2
+      dest: /etc/kea/kea-dhcp4.conf
     notify:
       - restart dhcpd
     when: not staticips and not uefi
 
   - name: Write out dhcp file (UEFI)
     template:
-      src: ../templates/dhcpd-uefi.conf.j2
-      dest: /etc/dhcp/dhcpd.conf
+      src: ../templates/kea-dhcp4.conf.j2
+      dest: /etc/kea/kea-dhcp4.conf
     notify:
       - restart dhcpd
     when: not staticips and uefi
@@ -436,13 +436,13 @@
       - helper-tftp
     when: not staticips and baremetal
 
-  - name: Starting DHCP/PXE services
+  - name: Starting DHCP/PXE services (Kea)
     service:
       name: "{{ item }}"
       enabled: yes
       state: started
     with_items:
-      - dhcpd
+      - kea-dhcp4
     when: not staticips and not baremetal
 
   - name: Unmasking Services
