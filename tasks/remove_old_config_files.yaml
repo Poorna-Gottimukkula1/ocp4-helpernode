@@ -1,6 +1,6 @@
 - name: Remove existing dhcp config
   file:
-    path: /etc/dhcp/dhcpd.conf
+    path: /etc/kea/kea-dhcp4.conf
     state: absent
 
 - name: Remove existing named config

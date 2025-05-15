@@ -52,7 +52,7 @@
       src: ../templates/kea-dhcp4.conf.j2
       dest: /etc/kea/kea-dhcp4.conf
     notify:
-      - restart dhcpd
+      - restart kea-dhcp4
     when: not staticips and not uefi
 
   - name: Write out dhcp file (UEFI)
@@ -60,7 +60,7 @@
       src: ../templates/kea-dhcp4.conf.j2
       dest: /etc/kea/kea-dhcp4.conf
     notify:
-      - restart dhcpd
+      - restart kea-dhcp4
     when: not staticips and uefi
 
   - name: Setup named configuration files
@@ -431,7 +431,7 @@
       enabled: yes
       state: started
     with_items:
-      - dhcpd
+      - kea-dhcp4
       - tftp
       - helper-tftp
     when: not staticips and baremetal
