@@ -3,40 +3,67 @@
     "interfaces-config": {
       "interfaces": [ "{{ networkifacename }}" ]
     },
+    "valid-lifetime": 14400,
+    "max-valid-lifetime": 14400,
+    "option-data": [
+      { "name": "routers", "data": "{{ dhcp.router }}" },
+      { "name": "broadcast-address", "data": "{{ dhcp.bcast }}" },
+      { "name": "subnet-mask", "data": "{{ dhcp.netmask }}" },
+      { "name": "domain-name-servers", "data": "{{ dhcp.dns | default(helper.ipaddr) }}" },
+      { "name": "domain-name", "data": "{{ dns.clusterid }}.{{ dns.domain | lower }}" },
+      { "name": "domain-search", "data": "{{ dns.clusterid }}.{{ dns.domain | lower }}, {{ dns.domain | lower }}" },
+      { "name": "interface-mtu", "code": 26, "space": "dhcp4", "csv-format": true, "data": "1500" }
+    ],
     "subnet4": [
       {
         "subnet": "{{ dhcp.ipid }}/{{ dhcp.netmaskid }}",
-        "pools": [ { "pool": "{{ dhcp.poolstart }} - {{ dhcp.poolend }}" } ],
-        "option-data": [
-          { "name": "routers", "data": "{{ dhcp.router }}" },
-          { "name": "broadcast-address", "data": "{{ dhcp.bcast }}" },
-          { "name": "domain-name-servers", "data": "{{ dhcp.dns | default(helper.ipaddr) }}" },
-          { "name": "domain-name", "data": "{{ dns.clusterid }}.{{ dns.domain | lower }}" }
-        ],
-        "reservations": [
-          {% for m in masters %}
-          { "hw-address": "{{ m.macaddr | lower }}", "ip-address": "{{ m.ipaddr }}" },
-          {% endfor %}
-          {% for w in workers %}
-          { "hw-address": "{{ w.macaddr | lower }}", "ip-address": "{{ w.ipaddr }}" },
-          {% endfor %}
-          {% if bootstrap is defined %}
-          { "hw-address": "{{ bootstrap.macaddr | lower }}", "ip-address": "{{ bootstrap.ipaddr }}" }
-          {% endif %}
+        "interface": "{{ networkifacename }}",
+        "pools": [
+          { "pool": "{{ dhcp.poolstart }} - {{ dhcp.poolend }}" }
         ],
         "next-server": "{{ helper.ipaddr }}",
-        "boot-file-name": {% if ppc64le %}"boot/grub2/powerpc-ieee1275/core.elf"{% else %}"pxelinux.0"{% endif %}
+        "boot-file-name": {% if ppc64le %}"boot/grub2/powerpc-ieee1275/core.elf"{% else %}"pxelinux.0"{% endif %},
+        "reservations": [
+          {% if bootstrap is defined %}
+          {
+            "hostname": "{{ bootstrap.name | lower }}",
+            "hw-address": "{{ bootstrap.macaddr | lower }}",
+            "ip-address": "{{ bootstrap.ipaddr }}"
+          }{% if masters or workers or other %},{% endif %}
+          {% endif %}
+
+          {% for m in masters %}
+          {
+            "hostname": "{{ m.name | lower }}",
+            "hw-address": "{{ m.macaddr | lower }}",
+            "ip-address": "{{ m.ipaddr }}"
+          }{% if not loop.last or workers or other %},{% endif %}
+          {% endfor %}
+
+          {% for w in workers %}
+          {
+            "hostname": "{{ w.name | lower }}",
+            "hw-address": "{{ w.macaddr | lower }}",
+            "ip-address": "{{ w.ipaddr }}"
+          }{% if not loop.last or other %},{% endif %}
+          {% endfor %}
+
+          {% for o in other %}
+          {
+            "hostname": "{{ o.name | lower }}",
+            "hw-address": "{{ o.macaddr | lower }}",
+            "ip-address": "{{ o.ipaddr }}"
+          }{% if not loop.last %},{% endif %}
+          {% endfor %}
+        ]
       }
     ],
-    "lease-database": {
-      "type": "memfile",
-      "persist": true,
-      "name": "/var/lib/kea/dhcp4.leases"
-    },
     "loggers": [
       {
         "name": "kea-dhcp4",
-        "output_options": [ { "output": "stdout" } ],
+        "output_options": [
+          { "output": "stdout" }
+        ],
         "severity": "INFO"
       }
     ]
